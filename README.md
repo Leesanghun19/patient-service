@@ -26,7 +26,7 @@
 
 ### 실행방법
 ```
-- docker-compose up
+docker-compose up
 ```
 #### 애플리케이션 확인
 
