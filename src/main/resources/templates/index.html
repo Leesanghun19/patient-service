@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환자 목록 - 환자 관리 시스템</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">환자 관리 시스템</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/}">환자 목록</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/patients/new}">환자 등록</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>환자 목록</h2>
+            <a th:href="@{/patients/new}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 새 환자 등록
+            </a>
+        </div>
+
+        <div id="alert-container"></div>
+
+        <div id="loading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">로딩 중...</span>
+            </div>
+        </div>
+
+        <div id="patient-list-container" style="display: none;">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>이름</th>
+                            <th>나이</th>
+                            <th>성별</th>
+                            <th>질병 여부</th>
+                            <th>이미지</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patient-list">
+                    </tbody>
+                </table>
+            </div>
+
+            <nav aria-label="환자 목록 페이지네이션">
+                <ul class="pagination justify-content-center" id="pagination">
+                </ul>
+            </nav>
+        </div>
+
+        <div id="no-data" class="alert alert-info text-center" style="display: none;">
+            등록된 환자가 없습니다. 환자를 등록하고 이미지를 업로드해주세요.
+        </div>
+    </main>
+
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">환자 관리 시스템 &copy;</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 0;
+        const pageSize = 10;
+
+        function showAlert(message, type = 'danger') {
+            const alertContainer = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertContainer.appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        function loadPatients(page = 0) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('patient-list-container').style.display = 'none';
+            document.getElementById('no-data').style.display = 'none';
+
+            fetch(`/api/patients?page=${page}&size=${pageSize}&imageUploaded=true`)
+                .then(response => {
+                    if (!response.ok) throw new Error('환자 목록을 불러오는데 실패했습니다');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+
+                    if (data.content.length === 0) {
+                        document.getElementById('no-data').style.display = 'block';
+                        return;
+                    }
+
+                    document.getElementById('patient-list-container').style.display = 'block';
+                    renderPatients(data.content);
+                    renderPagination(data);
+                    currentPage = page;
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    showAlert(error.message);
+                });
+        }
+
+        function renderPatients(patients) {
+            const tbody = document.getElementById('patient-list');
+            tbody.innerHTML = '';
+
+            patients.forEach(patient => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${patient.patientId}</td>
+                    <td>${patient.name}</td>
+                    <td>${patient.age}</td>
+                    <td>${patient.gender === 'M' ? '남성' : '여성'}</td>
+                    <td>${patient.hasDisease ? '있음' : '없음'}</td>
+                    <td>
+                        ${patient.imageUrl ?
+                            `<img src="${patient.imageUrl}" alt="환자 이미지" class="patient-thumbnail" onclick="window.open('${patient.imageUrl}', '_blank')">` :
+                            '<span class="text-muted">없음</span>'}
+                    </td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deletePatient(${patient.patientId})">삭제</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderPagination(data) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${data.pageNumber === 0 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadPatients(${data.pageNumber - 1}); return false;">이전</a>`;
+            pagination.appendChild(prevLi);
+
+            for (let i = 0; i < data.totalPages; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${i === data.pageNumber ? 'active' : ''}`;
+                li.innerHTML = `<a class="page-link" href="#" onclick="loadPatients(${i}); return false;">${i + 1}</a>`;
+                pagination.appendChild(li);
+            }
+
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${data.pageNumber === data.totalPages - 1 ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="#" onclick="loadPatients(${data.pageNumber + 1}); return false;">다음</a>`;
+            pagination.appendChild(nextLi);
+        }
+
+        function deletePatient(patientId) {
+            if (!confirm('정말로 이 환자를 삭제하시겠습니까? 이미지도 함께 삭제됩니다.')) {
+                return;
+            }
+
+            fetch(`/api/patients/${patientId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('환자 삭제에 실패했습니다');
+                showAlert('환자가 성공적으로 삭제되었습니다', 'success');
+                loadPatients(currentPage);
+            })
+            .catch(error => {
+                showAlert(error.message);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPatients(0);
+        });
+    </script>
+</body>
+</html>
