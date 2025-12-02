@@ -24,10 +24,10 @@
 - Docker & Docker Compose 설치
 - Java 17 설치 (로컬 개발 시)
 
-### 초기 설정
-
-#### 1. 테이블 생성
-
+### 실행방법
+```
+- docker-compose up
+```
 #### 애플리케이션 확인
 
 ```
@@ -66,8 +66,7 @@ CREATE TABLE IF NOT EXISTS patient (
   age INT NOT NULL,
   gender VARCHAR(10) NOT NULL,
   has_disease BOOLEAN NOT NULL DEFAULT FALSE,
-  image_file_name VARCHAR(255),
-  is_image_uploaded BOOLEAN NOT NULL DEFAULT FALSE,
+  image_file_name VARCHAR(255)
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -83,50 +82,5 @@ CREATE TABLE IF NOT EXISTS patient (
 | gender | VARCHAR(10) | 성별 (M/F) |
 | has_disease | BOOLEAN | 질병 여부 |
 | image_file_name | VARCHAR(255) | 저장된 이미지 파일명 |
-| is_image_uploaded | BOOLEAN | 이미지 업로드 완료 여부 (조회 필터링 기준) |
 | created_at | TIMESTAMP | 생성 시간 |
 | updated_at | TIMESTAMP | 수정 시간 |
-
----
-
-## 프로젝트 파일 구조
-
-```
-src/main/java/com/heuron/patient_service/
-├── controller/
-│   ├── PatientController.java           # REST API 엔드포인트
-│   └── PatientViewController.java       # Thymeleaf 뷰 컨트롤러
-├── service/
-│   ├── PatientService.java              # 환자 비즈니스 로직
-│   └── ImageService.java                # 이미지 처리 로직
-├── repository/
-│   └── PatientRepository.java           # JPA Repository
-├── entity/
-│   └── Patient.java                     # JPA Entity
-├── dto/
-│   ├── PatientRequestDto.java           # 환자 저장 요청
-│   ├── PatientResponseDto.java          # 환자 응답
-│   ├── ImageUploadResponseDto.java      # 이미지 업로드 응답
-│   ├── PaginatedResponse.java           # 페이징 응답
-│   └── ErrorResponse.java               # 에러 응답
-├── exception/
-│   ├── PatientNotFoundException.java    # 환자 미발견 예외
-│   ├── ImageNotFoundException.java      # 이미지 미발견 예외
-│   ├── InvalidImageException.java       # 파일 형식 오류 예외
-│   ├── ImageUploadException.java        # 이미지 업로드 실패 예외
-│   ├── FileReadException.java           # 파일 읽기 실패 예외
-│   ├── ErrorCode.java                   # 에러 코드 상수
-│   ├── ErrorMessage.java                # 에러 메시지 상수
-│   └── GlobalExceptionHandler.java      # 전역 예외 처리기
-├── util/
-│   └── FileUploadUtil.java              # 파일 업로드 유틸리티
-├── config/
-│   ├── WebConfig.java                   # 정적 리소스 서빙 설정
-│   └── SwaggerConfig.java               # Swagger/OpenAPI 설정
-└── PatientServiceApplication.java       # 애플리케이션 시작점
-
-src/main/resources/
-├── application.properties                # 애플리케이션 설정
-└── (uploads/ 디렉토리는 런타임에 생성)
-```
-
